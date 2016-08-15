@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 public class BoardManager : MonoBehaviour
 {
+    public static BoardManager Instance { set; get; }
+    private bool[,] allowedMoves { set; get; }
+
     public GameObject WhiteKing;
     public GameObject WhiteQueen;
     public GameObject WhiteRook;
@@ -23,6 +26,9 @@ public class BoardManager : MonoBehaviour
 
     private Chessman selectedChessman;
 
+    private Material previousMat;
+    public Material selectedMat;
+
 
     private List<GameObject> activeChessman;
 
@@ -37,6 +43,7 @@ public class BoardManager : MonoBehaviour
 
     void Awake()
     {
+        Instance = this;
         layerMask = LayerMask.GetMask("ChessPlane");
         Chessmans = new Chessman[8, 8];
         SpawnAllChessman();
@@ -72,25 +79,64 @@ public class BoardManager : MonoBehaviour
 
         if (Chessmans[x, y].isWhite != isWhiteTurn) return;
 
+        bool hasAtleastOneMove = false;
+        
+        allowedMoves = Chessmans[x, y].PossibleMoves();
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                if (allowedMoves[i, j])
+                {
+                    hasAtleastOneMove = true;
+                }
+            }
+        }
+
+        if (!hasAtleastOneMove) return;
+
         selectedChessman = Chessmans[x, y];
+        BoardHightlights.Instance.HighlightAllowedMoves(allowedMoves);
+        previousMat = selectedChessman.GetComponentInChildren<MeshRenderer>().material;
+        selectedMat.mainTexture = previousMat.mainTexture;
+        selectedChessman.GetComponentInChildren<MeshRenderer>().material = selectedMat;
     }
 
     private void MoveChessman(int x, int y)
     {
-        // don't let pieces overlap
-        if (Chessmans[x, y] != null) return;
-
-        if (selectedChessman.PossibleMove(x, y))
+        if (allowedMoves[x, y])
         {
+            Chessman c = Chessmans[x, y];
+
+            if (c != null)
+            {
+                // if this is a different piece that the current turn
+                if (c.isWhite != isWhiteTurn)
+                {
+                    activeChessman.Remove(c.gameObject);
+                    Destroy(c.gameObject);
+                    // this will be done later on, but just doing it now for sanity reasons
+                    Chessmans[x, y] = null;
+                }
+                else
+                {
+                    // don't allow moving on your own piece
+                    return;
+                }
+            }
+
             Chessmans[selectedChessman.CurrentX, selectedChessman.CurrentY] = null;
             selectedChessman.transform.position = GetTileCenter(x, y);
+            selectedChessman.SetPosition(x, y);
             Chessmans[x, y] = selectedChessman;
 
             // switch turns
             isWhiteTurn = !isWhiteTurn;
         }
 
+        selectedChessman.GetComponentInChildren<MeshRenderer>().material = previousMat;
         selectedChessman = null;
+        BoardHightlights.Instance.HideHighlights();
     }
 
     private void UpdateSelection()
@@ -196,7 +242,7 @@ public class BoardManager : MonoBehaviour
         activeChessman.Add(go);
     }
 
-    private Vector3 GetTileCenter(int x, int y)
+    public static Vector3 GetTileCenter(int x, int y)
     {
         Vector3 position = Vector3.zero;
         position.x += (TILE_SIZE * x) + TILE_OFFSET;

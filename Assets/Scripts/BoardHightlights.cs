@@ -38,7 +38,7 @@ public class BoardHightlights : MonoBehaviour
                 {
                     GameObject go = GetHighlightObject();
                     go.SetActive(true);
-                    go.transform.position = new Vector3(i, 0, j);
+                    go.transform.position = BoardManager.GetTileCenter(i, j);
                 }
             }
         }
