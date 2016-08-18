@@ -100,6 +100,7 @@ public class BoardManager : MonoBehaviour
         previousMat = selectedChessman.GetComponentInChildren<MeshRenderer>().material;
         selectedMat.mainTexture = previousMat.mainTexture;
         selectedChessman.GetComponentInChildren<MeshRenderer>().material = selectedMat;
+        selectedChessman.GetComponentInChildren<Animator>().SetBool("Selected", true);
     }
 
     private void MoveChessman(int x, int y)
@@ -135,6 +136,7 @@ public class BoardManager : MonoBehaviour
         }
 
         selectedChessman.GetComponentInChildren<MeshRenderer>().material = previousMat;
+        selectedChessman.GetComponentInChildren<Animator>().SetBool("Selected", false);
         selectedChessman = null;
         BoardHightlights.Instance.HideHighlights();
     }
@@ -146,7 +148,7 @@ public class BoardManager : MonoBehaviour
         RaycastHit hit;
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 50.0f, layerMask))
         {
-            Debug.Log(hit.point);
+            //Debug.Log(hit.point);
             selectionX = (int)hit.point.x;
             selectionY = (int)hit.point.z;
         }
